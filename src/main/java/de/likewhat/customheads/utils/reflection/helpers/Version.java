@@ -21,10 +21,10 @@ public enum Version {
     V1_19_R1(1191), V1_19_R2(1192), V1_19_R3(1193),
     V1_20_R1(1201), V1_20_R2(1202), V1_20_R3(1203),
     V1_20_5(1205), V1_20_6(1206),
-    V1_21_0(1210),
+    V1_21_0(1210), V1_21_1(1211),
     LATEST(Integer.MAX_VALUE),
 
-    LATEST_UPDATE(V1_21_0);
+    LATEST_UPDATE(V1_21_1);
 
     private static final String PACKET_NAME = Bukkit.getServer().getClass().getPackage().getName();
     private static final String RAW_VERSION;
@@ -37,7 +37,12 @@ public enum Version {
             versionString = packetVersion;
         } catch(NumberFormatException e) {
             String bukkitVersionString = Bukkit.getBukkitVersion();
-            versionString = bukkitVersionString.substring(0, bukkitVersionString.indexOf("-"));
+            int dashIndex = bukkitVersionString.indexOf("-");
+            if (dashIndex != -1) {
+                versionString = bukkitVersionString.substring(0, dashIndex);
+            } else {
+                versionString = bukkitVersionString;
+            }
         }
         RAW_VERSION = versionString;
     }
@@ -47,7 +52,7 @@ public enum Version {
             return currentVersion;
         }
         String versionString = RAW_VERSION.replaceAll("\\D+", "");
-        if(versionString.equals("121")) { // Something something 1.21 and not 1.21.0
+        if(versionString.equals("121")) { // Something 1.21 and not 1.21.0
             versionString += "0";
         }
         currentVersion = fromValue(Integer.parseInt(versionString));
