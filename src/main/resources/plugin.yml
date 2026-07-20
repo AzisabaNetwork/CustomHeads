@@ -2,6 +2,7 @@ main: ${project.groupId}.${project.artifactId}
 name: ${project.artifactId}
 version: ${project.version}
 author: LikeWhat
+api-version: 1.14
 softdepend: [Vault, Essentials]
 
 commands: 

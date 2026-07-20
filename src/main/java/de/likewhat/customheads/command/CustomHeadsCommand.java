@@ -10,7 +10,7 @@ import de.likewhat.customheads.headwriter.HeadFontType;
 import de.likewhat.customheads.headwriter.HeadWriter;
 import de.likewhat.customheads.utils.*;
 import de.likewhat.customheads.utils.history.SearchHistory;
-import de.likewhat.customheads.utils.reflection.helpers.ReflectionUtils;
+
 import de.likewhat.customheads.utils.reflection.helpers.Version;
 import de.likewhat.customheads.utils.updaters.FetchResult;
 import org.bukkit.*;
@@ -185,36 +185,7 @@ public class CustomHeadsCommand implements CommandExecutor {
                 return true;
             }
 
-            /* Test Command plez Ignore
-            if (args[0].equalsIgnoreCase("test")) {
-                try {
-                    Configs tempcon = new Configs(CustomHeads.getInstance(), "test.yml", false, "testing");
-                    if(args[1].equalsIgnoreCase("nbt")) {
-                        Object result = ItemNBTUtils.getTagFromItem(player.getItemInHand(), true);
-                        player.sendMessage(result == null ? "null" : result.toString());
-                    }
-                    if (args[1].equalsIgnoreCase("gettags")) {
-                        player.sendMessage("[Tags] " + CustomHeads.getTagEditor().getTags(player.getItemInHand()));
-                    }
-                    if(args[1].equalsIgnoreCase("getid")) {
-                        CustomHead customHead = CustomHeads.getApi().getHead(CustomHeads.getCategoryManager().getCategory(args[2]), Integer.parseInt(args[3]));
-                        player.sendMessage("[" + customHead
-                                .getId() + "] Name: " + customHead
-                                .getItemMeta()
-                                .getDisplayName() + "§f Category: " + customHead
-                                .getOriginCategory()
-                                .getPlainName());
-                    }
-                    if(args[1].equalsIgnoreCase("gettexture")) {
-                        ItemEditor item = new ItemEditor(player.getItemInHand());
-                        CustomHeads.getPluginLogger().info(item.getTexture());
-                    }
-                } catch(Throwable into_the_trash) {
-                    into_the_trash.printStackTrace();
-                }
-                return true;
-            }
-            */
+
             if (args[0].equalsIgnoreCase("categories")) {
                 if (hasPermission(player, "heads.admin")) {
                     if (args.length < 2) {
@@ -491,14 +462,13 @@ public class CustomHeadsCommand implements CommandExecutor {
                             f.setVelocity(new Vector(random.nextDouble() * (random.nextBoolean() ? .01 : -.01), .2, random.nextDouble() * (random.nextBoolean() ? .01 : -.01)));
                             if(Version.getCurrentVersion().isNewerThan(Version.V1_13_R1)) {
                                 try {
-                                    Class<?> particleClass = ReflectionUtils.getClassByName("org.bukkit.Particle");
-                                    World.class.getMethod("spawnParticle", particleClass, Location.class, int.class).invoke(world, ReflectionUtils.getEnumConstant(particleClass, "LAVA"), location, 6);
+                                    world.spawnParticle(org.bukkit.Particle.LAVA, location, 6);
                                 } catch (Exception e) {
                                     CustomHeads.getPluginLogger().log(Level.WARNING, "Failed to spawn Particle for Firework", e);
                                 }
                             } else {
                                 for (int i = 0; i < 6; i++) {
-                                    world.playEffect(location, Effect.LAVA_POP, 0);
+                                    world.spawnParticle(org.bukkit.Particle.LAVA, location, 6);
                                 }
                             }
                         }
@@ -710,16 +680,15 @@ public class CustomHeadsCommand implements CommandExecutor {
                                 if (hasPermission(player, "heads.use.saveastexture")) {
                                     if (!customHeadsPlayer.hasHead(args[1])) {
                                         player.sendMessage(CustomHeads.getLanguageManager().SAVE_GET_TEXTURE);
-                                        GameProfileBuilder.fetch(player.getUniqueId(), gameProfile -> {
-                                            try {
-                                                args[1] = toConfigString(args[1]);
-                                                customHeadsPlayer.saveHead(args[1], Utils.getTextureFromProfile(gameProfile));
-                                                player.sendMessage(CustomHeads.getLanguageManager().SAVE_OWN_SUCCESSFUL.replace("{NAME}", format(args[1])));
-                                            } catch (Exception e) {
-                                                sender.sendMessage(CustomHeads.getLanguageManager().SAVE_OWN_FAILED);
-                                                CustomHeads.getPluginLogger().log(Level.WARNING, "Failed to get Playertexture", e);
-                                            }
-                                        });
+                                        try {
+                                            Object gameProfile = player.getClass().getMethod("getProfile").invoke(player);
+                                            args[1] = toConfigString(args[1]);
+                                            customHeadsPlayer.saveHead(args[1], Utils.getTextureFromProfile((com.mojang.authlib.GameProfile) gameProfile));
+                                            player.sendMessage(CustomHeads.getLanguageManager().SAVE_OWN_SUCCESSFUL.replace("{NAME}", format(args[1])));
+                                        } catch (Exception e) {
+                                            sender.sendMessage(CustomHeads.getLanguageManager().SAVE_OWN_FAILED);
+                                            CustomHeads.getPluginLogger().log(Level.WARNING, "Failed to get Playertexture", e);
+                                        }
                                         return true;
                                     }
                                     player.sendMessage(CustomHeads.getLanguageManager().SAVE_ALREADY_EXIST.replace("{NAME}", format(args[1])));

@@ -1,15 +1,7 @@
 package de.likewhat.customheads.utils;
 
-/*
- *  Project: CustomHeads in APIHandler
- *     by LikeWhat
- *
- *  created on 22.08.2018 at 22:12
- */
-
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import com.mojang.authlib.properties.PropertyMap;
 import de.likewhat.customheads.CustomHeads;
 import de.likewhat.customheads.api.CustomHeadsAPI;
 import de.likewhat.customheads.api.CustomHeadsPlayer;
@@ -17,14 +9,7 @@ import de.likewhat.customheads.category.Category;
 import de.likewhat.customheads.category.CustomHead;
 import de.likewhat.customheads.headwriter.HeadFontType;
 import de.likewhat.customheads.headwriter.HeadWriter;
-import de.likewhat.customheads.utils.reflection.helpers.DataComponentTypes;
-import de.likewhat.customheads.utils.reflection.helpers.ReflectionUtils;
 import de.likewhat.customheads.utils.reflection.helpers.Version;
-import de.likewhat.customheads.utils.reflection.helpers.wrappers.instances.ClassWrappers;
-import de.likewhat.customheads.utils.reflection.helpers.wrappers.instances.ConstructorWrappers;
-import de.likewhat.customheads.utils.reflection.helpers.wrappers.instances.MethodWrappers;
-import de.likewhat.customheads.utils.reflection.nbt.ItemNBTUtils;
-import de.likewhat.customheads.utils.reflection.nbt.NBTType;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -34,74 +19,62 @@ import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Random;
 import java.util.logging.Level;
 
 public class APIHandler implements CustomHeadsAPI {
 
-    private static final Class<?> tileEntitySkullClass;
-    private static final Class<?> blockPositionClass;
-    private static final Constructor<?> blockPositionConstructor;
     private static final FireworkEffect.Type[] FX_TYPES = {FireworkEffect.Type.BALL, FireworkEffect.Type.BALL_LARGE, FireworkEffect.Type.BURST, FireworkEffect.Type.STAR};
-
-    static {
-        tileEntitySkullClass = ClassWrappers.TILE_ENTITY_SKULL.resolve();
-        blockPositionClass = ClassWrappers.BLOCK_POSITION.resolve();
-        blockPositionConstructor = ConstructorWrappers.MINECRAFT_BLOCK_POSITION.resolve();
-    }
 
     // Head Util Impl
     public String getSkullTexture(ItemStack itemStack) {
         if(itemStack == null) {
             throw new NullPointerException("Item cannot be null");
         }
+        if (!itemStack.hasItemMeta() || !(itemStack.getItemMeta() instanceof SkullMeta)) {
+            return null;
+        }
+        SkullMeta meta = (SkullMeta) itemStack.getItemMeta();
         try {
-            if(Version.getCurrentVersion().isNewerThan(Version.V1_20_R3)) {
-                Object profile = MethodWrappers.ITEMSTACK_DATA_GET.invokeOn(ItemNBTUtils.asNMSCopy(itemStack), DataComponentTypes.PROFILE.getInstance());
-                Method propertyMapMethod = ReflectionUtils.getDeclaredMethod("properties", ClassWrappers.RESOLVABLE_PROFILE.resolve());
-                PropertyMap properties = (PropertyMap) ReflectionUtils.invokeMethod(propertyMapMethod, profile);
-                Property property = (Property) properties.get("textures").toArray()[0];
-                Method propertyValueMethod = ReflectionUtils.getDeclaredMethod("value", Property.class);
-                return (String) ReflectionUtils.invokeMethod(propertyValueMethod, property);
-            } else {
-                return ItemNBTUtils.getTagFromItem(itemStack)
-                        .getCompound("SkullOwner")
-                        .getCompound("Properties")
-                        .getList("textures", NBTType.COMPOUND)
-                        .get(0)
-                        .asCompound()
-                        .getString("Value");
+            Field profileField = meta.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            GameProfile profile = (GameProfile) profileField.get(meta);
+            if (profile != null) {
+                Collection<Property> properties = profile.getProperties().get("textures");
+                if (properties != null && !properties.isEmpty()) {
+                    return properties.iterator().next().getValue();
+                }
             }
-//            Object tag = ItemNBTUtils.getTagFromItem(itemStack);
-//            Object skullOwner = NBTTagCompoundWrapper.GET_COMPOUND.invokeOn(tag, "SkullOwner");
-//            Object properties = NBTTagCompoundWrapper.GET_COMPOUND.invokeOn(skullOwner, "Properties");
-//            Object textures = NBTTagCompoundWrapper.GET_LIST.invokeOn(properties, "textures", NBTType.COMPOUND.getId());
-//            Object list = NBTTagListWrapper.GET.invokeOn(textures, 0);
-//            return NBTTagCompoundWrapper.GET_STRING.invokeOn(list, "Value");
         } catch (Exception e) {
-            CustomHeads.getPluginLogger().log(Level.WARNING, "Something went wrong while getting the Texture of an Skull", e);
+            CustomHeads.getPluginLogger().log(Level.WARNING, "Something went wrong while getting the Texture of a Skull item", e);
         }
         return null;
     }
 
     public String getSkullTexture(Block block) {
-        if (block.getType() != Material.SKULL) {
+        if (!(block.getState() instanceof Skull)) {
             throw new IllegalArgumentException("Block must be a Skull");
         }
-        Skull s = (Skull) block.getState();
-        if (s.getSkullType() != SkullType.PLAYER) {
-            throw new IllegalArgumentException("Block must be a Player Skull");
-        }
+        Skull skull = (Skull) block.getState();
         try {
-            Object nmsWorld = ReflectionUtils.getWorldHandle(block.getWorld());
-            return Utils.getTextureFromProfile((GameProfile) tileEntitySkullClass.getMethod("getGameProfile").invoke(tileEntitySkullClass.cast(ClassWrappers.WORLD.resolve().getMethod("getTileEntity", blockPositionClass).invoke(nmsWorld, blockPositionConstructor.newInstance(block.getX(), block.getY(), block.getZ())))));
+            // In 1.14+, we can just reflect the GameProfile from the Skull block state
+            Field profileField = skull.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            GameProfile profile = (GameProfile) profileField.get(skull);
+            if (profile != null) {
+                Collection<Property> properties = profile.getProperties().get("textures");
+                if (properties != null && !properties.isEmpty()) {
+                    return properties.iterator().next().getValue();
+                }
+            }
         } catch (Exception e) {
-            CustomHeads.getPluginLogger().log(Level.WARNING, "Error getting Texture from Skull", e);
+            CustomHeads.getPluginLogger().log(Level.WARNING, "Error getting Texture from Skull Block", e);
         }
         return null;
     }
@@ -116,94 +89,31 @@ public class APIHandler implements CustomHeadsAPI {
         new HeadWriter(fontType, text).writeAt(location);
     }
 
-public void setSkull(Block block, String texture, BlockFace blockFace) {
-    try {
-        block.setType(Material.AIR);
-        Skull skull;
-        Location location = block.getLocation();
-        Object nmsWorld = ReflectionUtils.getWorldHandle(block.getWorld());
-        switch (Version.getCurrentVersion()) {
-            case V1_8_R1:
-            case V1_8_R2:
-            case V1_8_R3:
-            case V1_9_R1:
-            case V1_9_R2:
-            case V1_10_R1:
-            case V1_11_R1:
-            case V1_12_R1:
-                block.setType(Material.SKULL);
-                skull = (Skull) block.getState();
-                skull.setSkullType(SkullType.PLAYER);
-                skull.setRawData((byte) 1);
-                break;
-            default:
-                LoggingUtils.logOnce(Level.WARNING, "Falling back to newest Method since the current Version hasn't been tested yet... (This may not work so here goes)");
-            case V1_13_R1:
-            case V1_13_R2:
-            case V1_14_R1:
-            case V1_15_R1:
-            case V1_16_R1:
-            case V1_16_R2:
-            case V1_16_R3:
-            case V1_17_R1:
-            case V1_18_R1:
-            case V1_18_R2:
-            case V1_19_R1:
-            case V1_19_R2:
-            case V1_19_R3:
-            case V1_20_R1:
-                Class<?> craftBlockDataClass = ClassWrappers.CRAFTBUKKIT_CRAFT_BLOCK_DATA.resolve();
-                Object blockDataInstance = craftBlockDataClass.cast(Material.class.getMethod("createBlockData").invoke(ReflectionUtils.getEnumConstant(Material.class, "PLAYER_HEAD")));
-                Object blockDataState = craftBlockDataClass.getMethod("getState").invoke(blockDataInstance);
-                Object positionInstance = blockPositionConstructor.newInstance(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-                MethodWrappers.WORLD_SET_TYPE_AND_DATA.invokeOn(nmsWorld, positionInstance, blockDataState, 3);
-
-                // Actually Update the Skull now
-                switch(Version.getCurrentVersion()) {
-                    case V1_13_R1:
-                    case V1_13_R2:
-                    case V1_14_R1:
-                    case V1_15_R1:
-                    case V1_16_R1:
-                    case V1_16_R2:
-                    case V1_16_R3: {
-                        Object skullInstance = tileEntitySkullClass.getConstructor().newInstance();
-                        tileEntitySkullClass.getMethod("setLocation", ReflectionUtils.getMCServerClassByName("World", "world.level"), blockPositionClass).invoke(skullInstance, nmsWorld, positionInstance);
-                        nmsWorld.getClass().getMethod("setTileEntity", blockPositionClass, ReflectionUtils.getMCServerClassByName("TileEntity", "world.level.block.entity")).invoke(nmsWorld, positionInstance, skullInstance);
-                        break;
-                    }
-                    default:
-                        LoggingUtils.logOnce(Level.WARNING, "Setting a Textured Skull may be broken for this Version (" + Version.getCurrentVersion() + ")");
-                    case V1_17_R1:
-                    case V1_18_R1:
-                    case V1_18_R2:
-                    case V1_19_R1:
-                    case V1_19_R2:
-                    case V1_19_R3:
-                    case V1_20_R1: {
-                        Object skullInstance = tileEntitySkullClass.getConstructor(blockPositionClass, ReflectionUtils.getMCServerClassByName("IBlockData", "world.level.block.state")).newInstance(positionInstance, blockDataState);
-                        MethodWrappers.WORLD_SET_TILE_ENTITY.invokeOn(nmsWorld, skullInstance);
-                        break;
-                    }
-                }
-                skull = (Skull) block.getState();
-                break;
-        }
-        skull.setRotation(blockFace);
-        skull.update();
-        setSkullTexture(block, texture);
-    } catch (Exception e) {
-        CustomHeads.getPluginLogger().log(Level.WARNING, "Error placing Skull", e);
-    }
-}
-
-    private void setSkullTexture(Block block, String texture) {
+    public void setSkull(Block block, String texture, BlockFace blockFace) {
         try {
-            Object nmsWorld = ReflectionUtils.getWorldHandle(block.getWorld());
-            Object craftSkull = tileEntitySkullClass.cast(MethodWrappers.WORLD_GET_TILE_ENTITY.invokeOn(nmsWorld, blockPositionConstructor.newInstance(block.getX(), block.getY(), block.getZ())));
-            MethodWrappers.TILE_ENTITY_SET_GAME_PROFILE.invokeOn(craftSkull, GameProfileBuilder.createProfileWithTexture(texture));
+            block.setType(Utils.getPlayerHeadMaterial());
+            Skull skull = (Skull) block.getState();
+            
+            // Try setting profile directly using reflection
+            GameProfile profile = new GameProfile(java.util.UUID.randomUUID(), null);
+            profile.getProperties().put("textures", new Property("textures", texture));
+            
+            Field profileField = skull.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            profileField.set(skull, profile);
+            
+            // Set rotation (if supported by the API)
+            try {
+                org.bukkit.block.data.BlockData blockData = block.getBlockData();
+                if (blockData instanceof org.bukkit.block.data.Rotatable) {
+                    ((org.bukkit.block.data.Rotatable) blockData).setRotation(blockFace);
+                    block.setBlockData(blockData);
+                }
+            } catch (Exception ignored) {}
+            
+            skull.update(true, false);
         } catch (Exception e) {
-            CustomHeads.getPluginLogger().log(Level.WARNING, "Failed to set Skull Texture", e);
+            CustomHeads.getPluginLogger().log(Level.WARNING, "Error placing Skull", e);
         }
     }
 

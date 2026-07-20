@@ -42,11 +42,11 @@ public class SearchHistory extends OverflowableHistory {
 
     public Inventory getInventory() {
         Inventory hisInv = Bukkit.createInventory(new CustomHeadsInventoryHolder.BaseHolder("custom_heads:search_history"), 9 * 5, CustomHeads.getLanguageManager().HISTORY_INV_TITLE.replace("{PLAYER}", super.offlinePlayer.getName()));
-        hisInv.setItem(0, new ItemEditor(Material.STAINED_GLASS_PANE,  5).setDisplayName(CustomHeads.getLanguageManager().HISTORY_SEARCHHISTORY_ACTIVE).getItem());
-        hisInv.setItem(1, CustomHeads.getTagEditor().setTags(new ItemEditor(Material.STAINED_GLASS_PANE,  15).setDisplayName(CustomHeads.getLanguageManager().HISTORY_GETHISTORY).getItem(), "history", "open#>get"));
+        hisInv.setItem(0, new ItemEditor(Material.LIME_STAINED_GLASS_PANE).setDisplayName(CustomHeads.getLanguageManager().HISTORY_SEARCHHISTORY_ACTIVE).getItem());
+        hisInv.setItem(1, CustomHeads.getTagEditor().setTags(new ItemEditor(Material.BLACK_STAINED_GLASS_PANE).setDisplayName(CustomHeads.getLanguageManager().HISTORY_GETHISTORY).getItem(), "history", "open#>get"));
         hisInv.setItem(8, Utils.createPlayerHeadItemEditor().setDisplayName("§b" + offlinePlayer.getName()).setOwner(super.offlinePlayer.getName()).getItem());
         for (int i = 9; i < 18; i++) {
-            hisInv.setItem(i, new ItemEditor(Material.STAINED_GLASS_PANE,  1).setDisplayName("§0").getItem());
+            hisInv.setItem(i, new ItemEditor(Material.ORANGE_STAINED_GLASS_PANE).setDisplayName("§0").getItem());
         }
         if (hasHistory()) {
             for (int i = 0; i < super.entries.size(); i++) {

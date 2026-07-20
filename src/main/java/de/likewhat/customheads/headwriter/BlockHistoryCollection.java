@@ -55,7 +55,7 @@ public class BlockHistoryCollection {
                 continue; // Won't need to update the Block any further
             }
             if (block.getType() != materialData.getItemType()) {
-                if(materialData.getItemType() == Material.BED) {
+                if(materialData.getItemType() == Material.RED_BED) {
                     block.setType(Material.AIR);
                     continue; // Beds got changed in later Versions so it won't update correctly
                 }

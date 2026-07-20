@@ -18,9 +18,9 @@ import de.likewhat.customheads.listener.OtherListeners;
 import de.likewhat.customheads.loader.Language;
 import de.likewhat.customheads.loader.Looks;
 import de.likewhat.customheads.utils.*;
-import de.likewhat.customheads.utils.reflection.TagEditor;
+import de.likewhat.customheads.utils.TagEditor;
 import de.likewhat.customheads.utils.reflection.helpers.Version;
-import de.likewhat.customheads.utils.reflection.nbt.NBTTagUtils;
+
 import de.likewhat.customheads.utils.updaters.FetchResult;
 import de.likewhat.customheads.utils.updaters.GitHubDownloader;
 import de.likewhat.customheads.utils.updaters.SpigetResourceFetcher;
@@ -424,32 +424,7 @@ public class CustomHeads extends JavaPlugin {
 
         isInit = true;
 
-        // Testing like a real Pro... not
-        try {
-            Object nbt = NBTTagUtils.jsonToNBT(categoryManager.getAllCategories().get(0).getAsCategory().serializeToJson());
-            pluginLogger.info("Serialized JsonObject > NBT");
-            pluginLogger.info(nbt.toString());
 
-            JsonElement convertedElement = NBTTagUtils.nbtToJsonObject(nbt, true);
-            pluginLogger.info("Deserialized NBT > JsonObject");
-            pluginLogger.info(convertedElement.toString());
-
-//            NBTTagCompoundWrapper wrappedCompound = new NBTTagCompoundWrapper(nbt);
-//            String itemString = wrappedCompound.getCompound("icon").getString("item");
-//            pluginLogger.info("string icon > item " + itemString);
-//            NBTTagListWrapper tagList = wrappedCompound.getList("heads");
-//            tagList.forEach(item -> {
-//                pluginLogger.info("tagListItem=" + item.getNBTObject());
-//            });
-//            pluginLogger.info("Tag List to Array");
-//            pluginLogger.info(Arrays.toString(tagList.toArray()));
-
-//            wrappedCompound.keySet().forEach(key -> {
-//                pluginLogger.info("key=" + key + " type=" + wrappedCompound.getKeyType(key));
-//            });
-        } catch (Exception e) {
-            pluginLogger.log(Level.SEVERE, "NBT Error", e);
-        }
 
     }
 
@@ -472,7 +447,7 @@ public class CustomHeads extends JavaPlugin {
                 UUID_CACHE.clear();
                 HeadFontType.clearCache();
                 GitHubDownloader.clearCache();
-                GameProfileBuilder.clearCache();
+
                 ScrollableInventory.clearCache();
                 PlayerWrapper.clearCache();
             }

@@ -11,11 +11,8 @@ import de.likewhat.customheads.category.Category;
 import de.likewhat.customheads.category.CustomHead;
 import de.likewhat.customheads.category.SubCategory;
 import de.likewhat.customheads.utils.reflection.AnvilGUI;
-import de.likewhat.customheads.utils.reflection.helpers.ReflectionUtils;
+
 import de.likewhat.customheads.utils.reflection.helpers.Version;
-import de.likewhat.customheads.utils.reflection.helpers.wrappers.instances.ClassWrappers;
-import de.likewhat.customheads.utils.reflection.helpers.wrappers.instances.ConstructorWrappers;
-import de.likewhat.customheads.utils.reflection.helpers.wrappers.instances.MethodWrappers;
 import de.likewhat.customheads.utils.updaters.FetchResult;
 import de.likewhat.customheads.utils.updaters.GitHubDownloader;
 import org.bukkit.Bukkit;
@@ -68,22 +65,22 @@ public class Utils {
 
     public static final String TEXT_JSON_FORMAT = "{\"text\":\"%s\"}";
 
-    private static final Material PLAYER_HEAD_MATERIAL;
-
-    static {
-        Material headMaterial;
-        try {
-            headMaterial = Material.SKULL_ITEM;
-        } catch (Exception e) {
-            headMaterial = Material.getMaterial("PLAYER_HEAD");
-        }
-        PLAYER_HEAD_MATERIAL = headMaterial;
-    }
+    private static final Material PLAYER_HEAD_MATERIAL = Material.PLAYER_HEAD;
 
     public static String getTextureFromProfile(GameProfile profile) {
         String value = "";
-        for (Property prop : profile.getProperties().get("textures")) {
-            value = prop.getValue();
+        try {
+            Object propertyMap = profile.getClass().getMethod("getProperties").invoke(profile);
+            Iterable<?> properties = (Iterable<?>) propertyMap.getClass().getMethod("get", Object.class).invoke(propertyMap, "textures");
+            for (Object prop : properties) {
+                try {
+                    value = (String) prop.getClass().getMethod("getValue").invoke(prop);
+                } catch (NoSuchMethodException e) {
+                    value = (String) prop.getClass().getMethod("value").invoke(prop);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return value;
     }
@@ -163,10 +160,8 @@ public class Utils {
         AnvilGUI gui = new AnvilGUI(player, "Enter Player Name", new AnvilGUI.AnvilClickEventHandler() {
             @Override
             public void onAnvilClick(AnvilGUI.AnvilClickEvent event) {
-                event.update();
                 if (event.getSlot() == AnvilGUI.AnvilSlot.OUTPUT) {
-                    if (event.getItem().getType() == Material.PAPER) {
-                        event.setCancelled(true);
+                    event.setCancelled(true);
                         if (event.getName().isEmpty()) {
                             return;
                         }
@@ -176,7 +171,6 @@ public class Utils {
                         }
                         CustomHeads.getApi().wrapPlayer(player).getGetHistory().addEntry(event.getName());
                         event.getPlayer().setItemOnCursor(createPlayerHeadItemEditor().setDisplayName(CustomHeads.getLanguageManager().GET_HEAD_NAME.replace("{PLAYER}", event.getName())).setOwner(event.getName()).getItem());
-                    }
                 } else if (event.getSlot() == AnvilGUI.AnvilSlot.INPUT_LEFT || event.getSlot() == AnvilGUI.AnvilSlot.INPUT_RIGHT) {
                     event.setCancelled(true);
                 }
@@ -195,7 +189,7 @@ public class Utils {
     public static void openPreLoader(Player player) {
         player.closeInventory();
         Inventory preLoader = Bukkit.createInventory(new CustomHeadsInventoryHolder.BaseHolder("custom_heads:pre_loader", player), 27, CustomHeads.getLanguageManager().LOADING);
-        preLoader.setItem(13, CustomHeads.getTagEditor().addTags(new ItemEditor(Material.WATCH).setDisplayName(CustomHeads.getLanguageManager().LOADING).getItem(), "blockMoving"));
+        preLoader.setItem(13, CustomHeads.getTagEditor().addTags(new ItemEditor(Material.CLOCK).setDisplayName(CustomHeads.getLanguageManager().LOADING).getItem(), "blockMoving"));
         player.openInventory(preLoader);
     }
 
@@ -466,11 +460,7 @@ public class Utils {
     }
 
     public static ItemStack createPlayerHeadItemStack() {
-        if (PLAYER_HEAD_MATERIAL.name().equals("SKULL_ITEM")) {
-            return new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
-        } else {
-            return new ItemStack(getPlayerHeadMaterial());
-        }
+        return new ItemStack(Material.PLAYER_HEAD, 1);
     }
 
     public static ItemEditor createPlayerHeadItemEditor() {
@@ -704,48 +694,7 @@ public class Utils {
 
     public static void sendJSONMessage(String json, Player player) {
         try {
-            Object serializedMessage = MethodWrappers.CHAT_COMPONENT_SERIALIZE.invokeOn(null, json);
-            switch(Version.getCurrentVersion()) {
-                case V1_8_R1:
-                case V1_8_R2:
-                case V1_8_R3:
-                case V1_9_R1:
-                case V1_9_R2:
-                case V1_10_R1:
-                case V1_11_R1:
-                case V1_12_R1:
-                case V1_13_R1:
-                case V1_13_R2:
-                case V1_14_R1:
-                case V1_15_R1: {
-                    Object packet = ConstructorWrappers.PACKET_PLAYOUT_CHAT.construct(serializedMessage);
-                    ReflectionUtils.sendPacket(packet, player);
-                }
-                case V1_16_R1:
-                case V1_16_R2:
-                case V1_16_R3:
-                case V1_17_R1:
-                case V1_18_R1:
-                case V1_18_R2: {
-                    Enum<?> messageType = ReflectionUtils.getEnumConstant(ClassWrappers.CHAT_MESSAGE_TYPE.resolve(), "CHAT");
-                    if (messageType == null) {
-                        messageType = ReflectionUtils.getEnumConstant(ClassWrappers.CHAT_MESSAGE_TYPE.resolve(), "a");
-                    }
-                    Object packet = ConstructorWrappers.PACKET_PLAYOUT_CHAT.construct(serializedMessage, messageType, null);
-                    ReflectionUtils.sendPacket(packet, player);
-                }
-                default:
-                case V1_19_R1: {
-                    Class<?> chatMessageTypeClass = ClassWrappers.CHAT_MESSAGE_TYPE.resolve();
-                    Object messageType = ReflectionUtils.getField(chatMessageTypeClass, "i"); // Field i should be tellraw_command
-                    //Method sendMessageMethod = ReflectionClassCollection.ENTITY_PLAYER.resolve().getMethod("a", ReflectionClassCollection.ICHAT_BASE_COMPONENT.resolve(), ReflectionClassCollection.RESOURCE_KEY.resolve());
-                    //sendMessageMethod.invoke(playerHandle, serializedMessage, messageType);
-                    Method sendMessageMethod = ClassWrappers.ENTITY_PLAYER.resolve().getMethod("a", ClassWrappers.ICHAT_BASE_COMPONENT.resolve());
-
-                    Object playerHandle = ReflectionUtils.getPlayerHandle(player);
-                    sendMessageMethod.invoke(playerHandle, serializedMessage);
-                }
-            }
+            player.spigot().sendMessage(net.md_5.bungee.chat.ComponentSerializer.parse(json));
         } catch (Exception e) {
             CustomHeads.getPluginLogger().log(Level.WARNING, "Could not send JSON-Message to Player", e);
         }

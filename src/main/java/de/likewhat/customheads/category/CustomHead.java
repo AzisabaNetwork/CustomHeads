@@ -10,7 +10,7 @@ package de.likewhat.customheads.category;
 import de.likewhat.customheads.CustomHeads;
 import de.likewhat.customheads.api.CustomHeadsPlayer;
 import de.likewhat.customheads.utils.ItemEditor;
-import de.likewhat.customheads.utils.reflection.TagEditor;
+import de.likewhat.customheads.utils.TagEditor;
 import lombok.Getter;
 import org.bukkit.inventory.ItemStack;
 

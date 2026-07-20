@@ -2,7 +2,7 @@ package de.likewhat.customheads.utils;
 
 import de.likewhat.customheads.CustomHeads;
 import de.likewhat.customheads.loader.Language;
-import de.likewhat.customheads.utils.reflection.TagEditor;
+import de.likewhat.customheads.utils.TagEditor;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bukkit.Bukkit;

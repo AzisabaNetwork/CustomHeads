@@ -96,8 +96,13 @@ public class GitHubDownloader {
                         }
 
                         if (release == null) {
-                            fetchResult.error(new NullPointerException("Unknown Tag: " + tag));
-                            return;
+                            if (releaseList.size() > 0) {
+                                CustomHeads.getPluginLogger().warning("Release " + tag + " not found. Falling back to the latest release (" + releaseList.get(0).getAsJsonObject().get("tag_name").getAsString() + ").");
+                                release = releaseList.get(0).getAsJsonObject();
+                            } else {
+                                fetchResult.error(new NullPointerException("Unknown Tag: " + tag + " and no releases found"));
+                                return;
+                            }
                         }
                         fetchResult.success(release);
                     }

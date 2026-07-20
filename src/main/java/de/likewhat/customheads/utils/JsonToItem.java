@@ -56,7 +56,7 @@ public class JsonToItem {
             }
             if (itemObj.has("ench")) {
                 for (JsonElement enchObj : itemObj.get("ench").getAsJsonArray()) {
-                    itemEditor.addEnchantment(new EnchantmentWrapper(enchObj.getAsJsonObject().get("id").getAsInt()), enchObj.getAsJsonObject().get("lvl").getAsInt());
+                    itemEditor.addEnchantment(new org.bukkit.enchantments.EnchantmentWrapper(enchObj.getAsJsonObject().get("id").getAsString()), enchObj.getAsJsonObject().get("lvl").getAsInt());
                 }
             }
             itemEditor.hideAllFlags();

@@ -9,7 +9,7 @@ import de.likewhat.customheads.category.CustomHead;
 import de.likewhat.customheads.category.SubCategory;
 import de.likewhat.customheads.headwriter.HeadFontType;
 import de.likewhat.customheads.utils.*;
-import de.likewhat.customheads.utils.reflection.TagEditor;
+import de.likewhat.customheads.utils.TagEditor;
 import de.likewhat.customheads.utils.updaters.GitHubDownloader;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

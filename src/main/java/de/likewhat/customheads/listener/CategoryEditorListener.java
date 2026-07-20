@@ -136,7 +136,7 @@ public class CategoryEditorListener implements Listener {
 
                     } else {
                         if (category.hasHeads()) {
-                            Utils.getDialog("Move existing Heads into this Subcategory?", new String[]{"cEditor", "convert", "y"}, null, new String[]{"cEditor", "convert", "n"}, new String[]{"The existing Heads", "will be deleted!"}, new ItemEditor(Material.SKULL_ITEM, 3).setDisplayName("Move existing Heads into this Subcategory?").setTexture("").getItem());
+                            Utils.getDialog("Move existing Heads into this Subcategory?", new String[]{"cEditor", "convert", "y"}, null, new String[]{"cEditor", "convert", "n"}, new String[]{"The existing Heads", "will be deleted!"}, new ItemEditor(Material.PLAYER_HEAD, 3).setDisplayName("Move existing Heads into this Subcategory?").setTexture("").getItem());
                         }
                     }
                     event.setCancelled(true);
